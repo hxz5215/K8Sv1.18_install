@@ -165,6 +165,7 @@ EOF
                 print("请使用Firefox浏览器访问 https://%s:30001/#/login" % masterip_list[0])
                 print("请使用/etc/kubernetes/admin-token.txt 中的密钥进行认证")
                 print("提醒：kubernetes 的证书默认是一年，请及时修改\n")
+
             else:   #否则就是集群模式
                 print("进入集群模式安装")
                 print("暂无")
@@ -180,13 +181,14 @@ EOF
                     # 设置名字
                     hostname = ssh.exec_command("hostname %s" % node_name)
                     etc_hostname = ssh.exec_command("echo '%s' > /etc/hostname" % node_name)
-                    who_iam = ssh.exec_command("hostname")
                     print("*" * 20, "进入环境初始化，请耐心等待....")
                     for shell in self.initialization_shell():
                         stdin, stdout, stderr = ssh.exec_command(shell)
                     print("*" * 20, "正在加入集群....")
                     kubeadm_join = ssh.exec_command("kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (masterip, str(token_creat), str(token_code)))
                     print("*" * 20, "加入集群成功....")
+                    # 关闭连接
+                    ssh.close()
 if __name__ == '__main__':
     # #用户输入IP:
     print("----------0、请先安装python3 并使用python3 执行此脚本------------")
