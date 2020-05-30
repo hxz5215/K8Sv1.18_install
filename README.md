@@ -4,6 +4,8 @@
 
 #前置准备工作,非常重要，否则将安装失败
 
+**安装python3,git,paramiko，k8s_install.py只需要在主节点执行即可，执行此脚本node节点自动加入。
+
 1、检查各服务器是否能连接网络，并且以一台作为节点对剩下服务器做免密登录
 
 2、安装python3、git
@@ -27,6 +29,7 @@ pip3 install paramiko
 ```
 python3 ~/K8Sv1.18_install/k8s_install.py
 ```
+
 
 备注：
 >1:初始化过程中有大量工作，请耐心等待，不要强制结束
