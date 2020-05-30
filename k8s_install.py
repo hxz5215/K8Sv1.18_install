@@ -4,7 +4,6 @@
 # describe: K8S V1.18 一键脚本安装
 import os
 import subprocess
-import paramiko
 
 
 class k8s_install(object):
@@ -112,9 +111,7 @@ EOF
         token_creat = ()
         token_code = ()
         name_num = 0
-        ssh = paramiko.SSHClient()
         # #自动添加策略，保存服务器的主机名和密钥信息，如果不添加，那么不再本地know_hosts文件中记录的主机将无法连接
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy)
         for masterip in masterip_list:
             name_num += 1
             if masterip == masterip_list[0]:  # 如果是当前单节点
@@ -173,23 +170,21 @@ EOF
                 exit()
             if masterip_list[0] == masterip:
                 for nodeip in nodeip_list:  #安装从节点
-                    ssh.connect(nodeip)
                     print("*" * 20, "进入Node节点操作，当前IP: %s" % nodeip)
                     token_creat = token_creat[1].split('\n')[-1]
                     token_code = token_code[1]
                     name_num += 1
                     node_name = "node0%s" % (name_num - 1)
                     # 设置名字
-                    hostname = ssh.exec_command("hostname %s" % node_name)
-                    etc_hostname = ssh.exec_command("echo '%s' > /etc/hostname" % node_name)
+                    hostname = os.system("ssh %s hostname %s" % (nodeip,node_name))
+                    etc_hostname = os.system("ssh %s echo '%s' > /etc/hostname" % (nodeip,node_name))
                     print("*" * 20, "进入环境初始化，请耐心等待....")
                     for shell in self.initialization_shell():
-                        stdin, stdout, stderr = ssh.exec_command(shell)
+                        os.system("ssh %s %s" %(nodeip,shell))
                     print("*" * 20, "正在加入集群....")
-                    kubeadm_join = ssh.exec_command("kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (masterip, str(token_creat), str(token_code)))
+                    kubeadm_join = os.system("ssh %s \"kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (nodeip,masterip, str(token_creat), str(token_code)))
                     print("*" * 20, "加入集群成功....")
-                    # 关闭连接
-                    ssh.close()
+
 if __name__ == '__main__':
     # #用户输入IP:
     print("----------0、请先安装python3 并使用python3 执行此脚本------------")
