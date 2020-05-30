@@ -25,7 +25,7 @@ class k8s_install(object):
         sed_swapoff = "sed -i 's/.*swap.*/#&/' /etc/fstab"
 
         #在所有服务器配置国内yum源
-        yum_install = "yum install -y wget yum-utils device-mapper-persistent-data lvm2 ipset ipvsadm chrony > /dev/null 2>&1"
+        yum_install = "yum install -y wget yum-utils device-mapper-persistent-data lvm2 ipset ipvsadm chrony git> /dev/null 2>&1"
         mkdir_repo = "mkdir /etc/yum.repos.d/bak && mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak > /dev/null 2>&1"
         wget_centos = "wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.cloud.tencent.com/repo/centos7_base.repo > /dev/null 2>&1"
         wget_epel = "wget -O /etc/yum.repos.d/epel.repo http://mirrors.cloud.tencent.com/repo/epel-7.repo > /dev/null 2>&1"
