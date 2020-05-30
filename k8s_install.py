@@ -44,7 +44,8 @@ gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors
 EOF
 """
 
-        yum_update = "yum -y clean all && yum -y makecache > /dev/null 2>&1"
+        yum_clean = "yum -y makecache > /dev/null 2>&1"
+        yum_makecahe = "yum -y makecache > /dev/null 2>&1"
         #修改内核参数，由于ipvs已经加入到了内核的主干，所以为kube-proxy开启ipvs的前提需要加载以下的内核模块
         modprobe_netfilter = "modprobe br_netfilter"
         br_netfilter = "echo 'br_netfilter' > /etc/modules-load.d/br_netfilter.conf"
@@ -73,7 +74,8 @@ EOF
         sysctl_k8s = "sysctl -p /etc/sysctl.d/k8s.conf > /dev/null 2>&1"
 
         #时间同步
-        start_chronyd = "systemctl enable chronyd.service && systemctl start chronyd.service"
+        enable_chronyd = "systemctl enable chronyd.service"
+        start_chronyd = "systemctl start chronyd.service"
         set_timezone = "timedatectl set-timezone Asia/Shanghai"
         ntpdate = "ntpdate ntp1.aliyun.com > /dev/null 2>&1"
         chronyc_sources = "chronyc sources > /dev/null 2>&1"
@@ -81,6 +83,7 @@ EOF
         #安装docker,kubelet
         remove_docker = "yum remove -y docker docker-ce docker-common docker-selinux docker-engine > /dev/null 2>&1"
         install_docker = "yum install -y docker-ce-19.03.5-3.el7.x86_64 > /dev/null 2>&1"
+        start_docker = "systemctl start docker > /dev/null 2>&1"
 
         docker_speed = """
 cat > /etc/docker/daemon.json << EOF
@@ -91,13 +94,17 @@ cat > /etc/docker/daemon.json << EOF
 } 
 EOF
 """
-        start_docker = "systemctl daemon-reload && systemctl enable docker && systemctl restart docker > /dev/null 2>&1"
+        docker_reload = "systemctl daemon-reload > /dev/null 2>&1"
+        enable_docker = "systemctl enable docker  > /dev/null 2>&1"
+        restart_docker = "systemctl restart docker > /dev/null 2>&1"
+
         install_kubelet = "yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes > /dev/null 2>&1"
-        start_kubelet = "systemctl enable kubelet && systemctl start kubelet > /dev/null 2>&1"
+        enable_kubelet = "systemctl enable kubelet > /dev/null 2>&1"
+        start_kubelet = "systemctl start kubelet > /dev/null 2>&1"
         return setenforce,sed_selinux,sed_selinux1,sed_selinux2,sed_selinux3,stop_firewalld,disable_firewalld,swapoff_a,sed_swapoff,yum_install,\
-               mkdir_repo,wget_centos,wget_epel,wget_docker,kubernetes_repo,yum_update,modprobe_netfilter,br_netfilter,k8s_conf,limits_conf,\
-               sysctl_k8s,start_chronyd,set_timezone,ntpdate,chronyc_sources,remove_docker,install_docker,start_docker,docker_speed,\
-               install_kubelet,start_kubelet
+               mkdir_repo,wget_centos,wget_epel,wget_docker,kubernetes_repo,yum_clean,yum_makecahe,modprobe_netfilter,br_netfilter,k8s_conf,limits_conf,\
+               sysctl_k8s,enable_chronyd,start_chronyd,set_timezone,ntpdate,chronyc_sources,remove_docker,install_docker,start_docker,docker_reload,enable_docker,restart_docker,docker_speed,\
+               install_kubelet,enable_kubelet,start_kubelet
 
     def shell_command(self):
         masterip_list = self.masterip.split(',')
@@ -164,8 +171,8 @@ EOF
                 exit()
             if masterip_list[0] == masterip:
                 for nodeip in nodeip_list:  #安装从节点
-                    print("*" * 20, "进入Node节点操作，当前IP: %s" % nodeip)
                     ssh.connect(nodeip)
+                    print("*" * 20, "进入Node节点操作，当前IP: %s" % nodeip)
                     token_creat = token_creat[1].split('\n')[-1]
                     token_code = token_code[1]
                     name_num += 1
@@ -173,16 +180,13 @@ EOF
                     # 设置名字
                     hostname = ssh.exec_command("hostname %s" % node_name)
                     etc_hostname = ssh.exec_command("echo '%s' > /etc/hostname" % node_name)
+                    who_iam = ssh.exec_command("hostname")
                     print("*" * 20, "进入环境初始化，请耐心等待....")
                     for shell in self.initialization_shell():
                         stdin, stdout, stderr = ssh.exec_command(shell)
                     print("*" * 20, "正在加入集群....")
-                    try:
-                        kubeadm_join = ssh.exec_command("kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (masterip, str(token_creat), str(token_code)))
-                    except :
-                        print("加入集群时出错,请检视下行命令\n","kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (masterip, str(token_creat), str(token_code)))
-                    else:
-                        print("*" * 20, "加入集群成功....")
+                    kubeadm_join = ssh.exec_command("kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (masterip, str(token_creat), str(token_code)))
+                    print("*" * 20, "加入集群成功....")
 if __name__ == '__main__':
     # #用户输入IP:
     print("----------0、请先安装python3 并使用python3 执行此脚本------------")
