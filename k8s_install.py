@@ -174,7 +174,9 @@ EOF
                     token_creat = token_creat[1].split('\n')[-1]
                     token_code = token_code[1]
                     name_num += 1
+                    print("name_num",name_num)
                     node_name = "node0%s" % (name_num - 1)
+                    print("node_name",node_name)
                     # 设置名字
                     os.system("ssh %s \"hostname %s\"" % (nodeip,node_name))
                     os.system("ssh %s \"echo '%s' > /etc/hostname\"" % (nodeip,node_name))
