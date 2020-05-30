@@ -103,7 +103,7 @@ EOF
         start_kubelet = "systemctl start kubelet > /dev/null 2>&1"
         return setenforce,sed_selinux,sed_selinux1,sed_selinux2,sed_selinux3,stop_firewalld,disable_firewalld,swapoff_a,sed_swapoff,yum_install,\
                mkdir_repo,wget_centos,wget_epel,wget_docker,kubernetes_repo,yum_clean,yum_makecahe,modprobe_netfilter,br_netfilter,k8s_conf,limits_conf,\
-               sysctl_k8s,enable_chronyd,start_chronyd,set_timezone,ntpdate,chronyc_sources,remove_docker,install_docker,start_docker,docker_reload,enable_docker,restart_docker,docker_speed,\
+               sysctl_k8s,enable_chronyd,start_chronyd,set_timezone,ntpdate,chronyc_sources,remove_docker,install_docker,start_docker,docker_speed,docker_reload,enable_docker,restart_docker,\
                install_kubelet,enable_kubelet,start_kubelet
 
     def shell_command(self):
@@ -131,6 +131,7 @@ EOF
                     hosts_name = hosts + "  node0%s" % (name_num - 1)
                     node_hosts = os.system("echo '%s' >> /etc/hosts" % hosts_name)
                     scp_hosts = os.system("scp -rp /etc/hosts %s:/etc/hosts"%hosts)
+                scp_hosts = os.system("scp -rp /etc/hosts %s:/etc/hosts" % nodeip_list[0])
                 print("*"*20,"进入环境初始化，请耐心等待....")
                 for shell in self.initialization_shell():
                     env_init = os.system(shell)
