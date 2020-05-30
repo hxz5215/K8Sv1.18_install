@@ -154,11 +154,10 @@ EOF
                 print("*" * 20,"kubectl get nodes")
                 print("*" * 20, "kubectl get cs")
                 print("*" * 20, "kubectl get pod -n kube-system")
-                print("\n")
-                print("-"* 20,"等待calico 相关服务为Running 即可登录控制台","-"* 20)
+                print("-"* 20,"等待calico 相关服务为Running 即可登录控制台","-"* 20,"\n")
                 print("请使用Firefox浏览器访问 https://%s:30001/#/login" % masterip_list[0])
                 print("请使用/etc/kubernetes/admin-token.txt 中的密钥进行认证")
-                print("提醒：kubernetes 的证书默认是一年，请及时修改")
+                print("提醒：kubernetes 的证书默认是一年，请及时修改\n")
             else:   #否则就是集群模式
                 print("进入集群模式安装")
                 print("暂无")
@@ -167,6 +166,8 @@ EOF
                 for nodeip in nodeip_list:  #安装从节点
                     print("*" * 20, "进入Node节点操作，当前IP: %s" % nodeip)
                     ssh.connect(nodeip)
+                    token_creat = token_creat[1].split('\n')[-1]
+                    token_code = token_code[1]
                     name_num += 1
                     node_name = "node0%s" % (name_num - 1)
                     # 设置名字
