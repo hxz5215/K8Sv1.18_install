@@ -169,14 +169,13 @@ EOF
                 print("暂无")
                 exit()
             if masterip_list[0] == masterip:
+                node_num = 0
                 for nodeip in nodeip_list:  #安装从节点
                     print("*" * 20, "进入Node节点操作，当前IP: %s" % nodeip)
                     token_creat = token_creat[1].split('\n')[-1]
                     token_code = token_code[1]
-                    name_num += 1
-                    print("name_num",name_num)
-                    node_name = "node0%s" % (name_num - 1)
-                    print("node_name",node_name)
+                    node_num += 1
+                    node_name = "node0%s" % (node_num)
                     # 设置名字
                     os.system("ssh %s \"hostname %s\"" % (nodeip,node_name))
                     os.system("ssh %s \"echo '%s' > /etc/hostname\"" % (nodeip,node_name))
