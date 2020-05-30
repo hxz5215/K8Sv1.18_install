@@ -195,7 +195,11 @@ if __name__ == '__main__':
     if ask_ssh.upper() == "Y":
         k8s_masterip = input("请输入K8S_Master IP, 多个IP以逗号分隔: ")
         k8s_nodeip = input("请输入K8S_node IP,多个IP以逗号分隔: ")
-        k8s_install = k8s_install(k8s_masterip,k8s_nodeip)
-        k8s_install.shell_command()
+        ask_ent = input("**********   确认/取消 (Y/N) :")
+        if ask_ent.upper() == "Y":
+            k8s_install = k8s_install(k8s_masterip,k8s_nodeip)
+            k8s_install.shell_command()
+        else:
+            exit()
     else:
         exit()
