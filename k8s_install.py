@@ -176,11 +176,11 @@ EOF
                     name_num += 1
                     node_name = "node0%s" % (name_num - 1)
                     # 设置名字
-                    hostname = os.system("ssh %s hostname %s" % (nodeip,node_name))
-                    etc_hostname = os.system("ssh %s echo '%s' > /etc/hostname" % (nodeip,node_name))
+                    os.system("ssh %s \"hostname %s\"" % (nodeip,node_name))
+                    os.system("ssh %s \"echo '%s' > /etc/hostname\"" % (nodeip,node_name))
                     print("*" * 20, "进入环境初始化，请耐心等待....")
                     for shell in self.initialization_shell():
-                        os.system("ssh %s %s" %(nodeip,shell))
+                        os.system("ssh %s \"%s\"" %(nodeip,shell))
                     print("*" * 20, "正在加入集群....")
                     kubeadm_join = os.system("ssh %s \"kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (nodeip,masterip, str(token_creat), str(token_code)))
                     print("*" * 20, "加入集群成功....")
@@ -191,15 +191,11 @@ if __name__ == '__main__':
     print("----------1、此脚本依赖网络，请连接好网络执行此脚本-----------")
     print("----------2、请将此脚本在主节点上执行，请在主节点上对其他所有节点做免密登录-----------")
     print("**********3、请确认主节点已对其他节点做好免密登录，再次确认后再执行此脚本**********")
-    ask_ssh = input("**********   确认/取消 (Y/N) :")
-    if ask_ssh.upper() == "Y":
-        k8s_masterip = input("请输入K8S_Master IP, 多个IP以逗号分隔: ")
-        k8s_nodeip = input("请输入K8S_node IP,多个IP以逗号分隔: ")
-        ask_ent = input("**********   确认/取消 (Y/N) :")
-        if ask_ent.upper() == "Y":
-            k8s_install = k8s_install(k8s_masterip,k8s_nodeip)
-            k8s_install.shell_command()
-        else:
-            exit()
+    k8s_masterip = input("请输入K8S_Master IP, 多个IP以逗号分隔: ")
+    k8s_nodeip = input("请输入K8S_node IP,多个IP以逗号分隔: ")
+    ask_ent = input("**********   确认/取消 (Y/N) :")
+    if ask_ent.upper() == "Y":
+        k8s_install = k8s_install(k8s_masterip,k8s_nodeip)
+        k8s_install.shell_command()
     else:
         exit()
