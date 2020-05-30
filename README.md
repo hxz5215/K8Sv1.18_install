@@ -19,12 +19,8 @@ yum -y install python36  git
 git clone https://github.com/hxz5215/K8Sv1.18_install.git ~/K8Sv1.18_install
 ```
 
-4、 安装paramiko 模块，网络不好可能会安装失败，如果失败重复几次即可
-```
-pip3 install paramiko
-```
 
-5、执行脚本，一键安装K8S V1.18
+4、执行脚本，一键安装K8S V1.18
 
 ```
 python3 ~/K8Sv1.18_install/k8s_install.py
