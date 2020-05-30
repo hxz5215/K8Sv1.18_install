@@ -25,7 +25,7 @@ class k8s_install(object):
         sed_swapoff = "sed -i 's/.*swap.*/#&/' /etc/fstab"
 
         #在所有服务器配置国内yum源
-        yum_install = "yum install -y wget yum-utils device-mapper-persistent-data lvm2 ipset ipvsadm chrony git> /dev/null 2>&1"
+        yum_install = "yum install -y wget yum-utils device-mapper-persistent-data lvm2 ipset ipvsadm chrony > /dev/null 2>&1"
         mkdir_repo = "mkdir /etc/yum.repos.d/bak && mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak > /dev/null 2>&1"
         wget_centos = "wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.cloud.tencent.com/repo/centos7_base.repo > /dev/null 2>&1"
         wget_epel = "wget -O /etc/yum.repos.d/epel.repo http://mirrors.cloud.tencent.com/repo/epel-7.repo > /dev/null 2>&1"
@@ -111,7 +111,7 @@ EOF
         for masterip in masterip_list:
             name_num += 1
             if masterip == masterip_list[0]:  # 如果是当前单节点
-                print("*"*20,"当前操作IP: %s" %masterip)
+                print("*"*20,"进入Master节点操作，当前IP: %s" %masterip)
                 master_name = "master0%s" % name_num
                 #设置名字
                 hostname = os.system("hostname %s"%master_name)
@@ -136,13 +136,9 @@ EOF
 
                 #部署calico
                 print("*" * 20, "正在安装calico....")
-                curl_rbac = os.system("curl https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml -O > /dev/null 2>&1")
-                apply_rbac = os.system("kubectl apply -f rbac-kdd.yaml > /dev/null 2>&1")
-                wget_calico = os.system("wget https://docs.projectcalico.org/manifests/calico.yaml  > /dev/null 2>&1")
-                calico_typha = os.system("sed -i 's/typha_service_name:.*/typha_service_name: \"calico-typha\"/g' calico.yaml")
-                calico_ipv4 = os.system("sed -i 's/# - name: CALICO_IPV4POOL_CIDR/- name: CALICO_IPV4POOL_CIDR/g' calico.yaml")
-                calico_yaml = os.system("sed -i 's/#   value: \"192.168.0.0\/16\"/  value: \"10.122.0.0\/16\"/g' calico.yaml")
-                calico_apply = os.system("kubectl apply -f calico.yaml")
+                k8s_calico = os.system("git clone https://github.com/hxz5215/calico.git /etc/kubernetes/calico")
+                apply_rbac = os.system("kubectl apply -f /etc/kubernetes/calico/rbac-kdd.yaml > /dev/null 2>&1")
+                calico_apply = os.system("kubectl apply -f /etc/kubernetes/calico/calico.yaml > /dev/null 2>&1" )
                 print("*" * 20, "calico安装完成....")
                 token_creat = subprocess.getstatusoutput("kubeadm token create")
                 token_code = subprocess.getstatusoutput("openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'")
@@ -154,6 +150,12 @@ EOF
                 create_admin = os.system("kubectl apply -f /etc/kubernetes/dashboard/create-admin.yaml")
                 dashboard_token = os.system("kubectl -n kubernetes-dashboard get secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}') -o go-template='{{.data.token}}' | base64 -d > /etc/kubernetes/admin-token.txt")
                 print("*" * 20, "dashboard安装完成")
+                print("*" * 20 ,"执行以下命令,检查K8s集群\n")
+                print("*" * 20,"kubectl get nodes")
+                print("*" * 20, "kubectl get cs")
+                print("*" * 20, "kubectl get pod -n kube-system")
+                print("\n")
+                print("-"* 20,"等待calico 相关服务为Running 即可登录控制台","-"* 20)
                 print("请使用Firefox浏览器访问 https://%s:30001/#/login" % masterip_list[0])
                 print("请使用/etc/kubernetes/admin-token.txt 中的密钥进行认证")
                 print("提醒：kubernetes 的证书默认是一年，请及时修改")
@@ -163,7 +165,7 @@ EOF
                 exit()
             if masterip_list[0] == masterip:
                 for nodeip in nodeip_list:  #安装从节点
-                    print("*" * 20, "当前操作IP: %s" % nodeip)
+                    print("*" * 20, "进入Node节点操作，当前IP: %s" % nodeip)
                     ssh.connect(nodeip)
                     name_num += 1
                     node_name = "node0%s" % (name_num - 1)
@@ -173,9 +175,13 @@ EOF
                     print("*" * 20, "进入环境初始化，请耐心等待....")
                     for shell in self.initialization_shell():
                         stdin, stdout, stderr = ssh.exec_command(shell)
-                        print("*" * 20, "正在加入集群....")
+                    print("*" * 20, "正在加入集群....")
+                    try:
                         kubeadm_join = ssh.exec_command("kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (masterip, str(token_creat), str(token_code)))
-
+                    except :
+                        print("加入集群时出错,请检视下行命令\n","kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (masterip, str(token_creat), str(token_code)))
+                    else:
+                        print("*" * 20, "加入集群成功....")
 if __name__ == '__main__':
     # #用户输入IP:
     print("----------0、请先安装python3 并使用python3 执行此脚本------------")
