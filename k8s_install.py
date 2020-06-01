@@ -104,6 +104,7 @@ EOF
         token_creat = ()
         token_code = ()
         name_num = 0
+        node_num = 0
         # #自动添加策略，保存服务器的主机名和密钥信息，如果不添加，那么不再本地know_hosts文件中记录的主机将无法连接
 
         for masterip in masterip_list:
@@ -122,13 +123,12 @@ EOF
                     name_num += 1
                     hosts_name += hosts + "  node0%s" % (name_num - 1) + "\n"
                 os.system("cat >> /etc/hosts <<EOF \n%sEOF\n" % hosts_name)
-                for ip in nodeip_list:
-                    os.system("scp -rp /etc/hosts %s:/etc/hosts" % ip)
+                    
                 print("*"*20,"进入环境初始化，请耐心等待....")
                 for shell in self.initialization_shell():
                     time.sleep(1)
                     env_init = os.system(shell)
-                print("*"*20,"环境初始化完成，安装kubeadm...")
+                print("*"*20,"环境初始化完成，安装kubernetes...")
                 #设置hosts
                 #集群初始化
                 kubeadm_init = os.system("kubeadm init --kubernetes-version=1.18.0 --image-repository registry.aliyuncs.com/google_containers  --service-cidr=10.10.0.0/16 --pod-network-cidr=10.122.0.0/16 --apiserver-advertise-address=%s" % masterip)
@@ -136,15 +136,36 @@ EOF
                 kube_config = os.system("cp -i /etc/kubernetes/admin.conf /root/.kube/config")
 
                 #部署calico
-                print("*" * 20, "正在安装calico....")
+                print("*" * 20, "正在安装网络组件calico....")
                 k8s_calico = os.system("git clone https://github.com/hxz5215/calico.git /etc/kubernetes/calico")
                 apply_rbac = os.system("kubectl apply -f /etc/kubernetes/calico/rbac-kdd.yaml > /dev/null 2>&1")
                 calico_apply = os.system("kubectl apply -f /etc/kubernetes/calico/calico.yaml > /dev/null 2>&1" )
-                print("*" * 20, "calico安装完成....")
+                print("*" * 20, "网络组件calico安装完成....")
                 token_creat = subprocess.getstatusoutput("kubeadm token create")
                 token_code = subprocess.getstatusoutput("openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'")
+                token_creat = token_creat[1].split('\n')[-1]
+                token_code = token_code[1]
 
-                #部署UI
+                # 安装从节点
+                for nodeip in nodeip_list:  
+                    os.system("scp -rp /etc/hosts %s:/etc/hosts" % nodeip)
+                    print("*" * 20, "进入Node节点操作，当前IP: %s" % nodeip)
+                    node_num += 1
+                    node_name = "node0%s" % (node_num)
+                    # 设置名字
+                    os.system("ssh %s \"hostname %s\"" % (nodeip,node_name))
+                    os.system("ssh %s \"echo '%s' > /etc/hostname\"" % (nodeip,node_name))
+                    print("*" * 20, "进入环境初始化，请耐心等待....")
+                    for shell in self.initialization_shell():
+                        time.sleep(1)
+                        os.system("ssh %s \"%s\"" %(nodeip,shell))
+                    print("*" * 20, "正在加入集群....")
+                    print("token_creat : ",token_creat)
+                    print("token_code : ",token_code)
+                    kubeadm_join = os.system("ssh %s \"kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (nodeip,masterip, str(token_creat), str(token_code)))
+                    print("*" * 20, "加入集群成功....")
+                    
+                #Master节点部署UI
                 print("*" * 20, "正在安装dashboard....")
                 k8s_dashboard =os.system("git clone https://github.com/hxz5215/k8s-dashboard-v2.0.0-beta8.git /etc/kubernetes/dashboard")
                 recommended = os.system("kubectl apply -f /etc/kubernetes/dashboard/recommended.yaml")
@@ -164,26 +185,6 @@ EOF
                 print("进入集群模式安装")
                 print("暂无")
                 exit()
-            token_creat = token_creat[1].split('\n')[-1]
-            token_code = token_code[1]
-            if masterip_list[0] == masterip:
-                node_num = 0
-                for nodeip in nodeip_list:  #安装从节点
-                    print("*" * 20, "进入Node节点操作，当前IP: %s" % nodeip)
-                    node_num += 1
-                    node_name = "node0%s" % (node_num)
-                    # 设置名字
-                    os.system("ssh %s \"hostname %s\"" % (nodeip,node_name))
-                    os.system("ssh %s \"echo '%s' > /etc/hostname\"" % (nodeip,node_name))
-                    print("*" * 20, "进入环境初始化，请耐心等待....")
-                    for shell in self.initialization_shell():
-                        time.sleep(1)
-                        os.system("ssh %s \"%s\"" %(nodeip,shell))
-                    print("*" * 20, "正在加入集群....")
-                    print("token_creat : ",token_creat)
-                    print("token_code : ",token_code)
-                    kubeadm_join = os.system("ssh %s \"kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (nodeip,masterip, str(token_creat), str(token_code)))
-                    print("*" * 20, "加入集群成功....")
 
 if __name__ == '__main__':
     # #用户输入IP:
