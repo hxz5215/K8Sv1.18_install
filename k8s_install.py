@@ -84,15 +84,7 @@ EOF
         install_docker = "yum install -y docker-ce-19.03.5-3.el7.x86_64 > /dev/null 2>&1"
         start_docker = "systemctl start docker > /dev/null 2>&1"
 
-        docker_speed = """
-cat > /etc/docker/daemon.json << EOF
-{  
-  "exec-opts": ["native.cgroupdriver=systemd"],
-  "registry-mirrors": ["https://q2hy3fzi.mirror.aliyuncs.com"], 
-  "graph": "/tol/docker-data" 
-} 
-EOF
-"""
+
         docker_reload = "systemctl daemon-reload > /dev/null 2>&1"
         enable_docker = "systemctl enable docker  > /dev/null 2>&1"
         restart_docker = "systemctl restart docker > /dev/null 2>&1"
@@ -102,7 +94,7 @@ EOF
         start_kubelet = "systemctl start kubelet > /dev/null 2>&1"
         return setenforce,sed_selinux,sed_selinux1,sed_selinux2,sed_selinux3,stop_firewalld,disable_firewalld,swapoff_a,sed_swapoff,yum_install,\
                mkdir_repo,wget_centos,wget_epel,wget_docker,kubernetes_repo,yum_clean,yum_makecahe,modprobe_netfilter,br_netfilter,k8s_conf,limits_conf,\
-               sysctl_k8s,enable_chronyd,start_chronyd,set_timezone,ntpdate,chronyc_sources,remove_docker,install_docker,start_docker,docker_speed,docker_reload,enable_docker,restart_docker,\
+               sysctl_k8s,enable_chronyd,start_chronyd,set_timezone,ntpdate,chronyc_sources,remove_docker,install_docker,start_docker,docker_reload,enable_docker,restart_docker,\
                install_kubelet,enable_kubelet,start_kubelet
 
     def shell_command(self):
@@ -115,6 +107,15 @@ EOF
         for masterip in masterip_list:
             name_num += 1
             if masterip == masterip_list[0]:  # 如果是当前单节点
+                docker_speed = """
+cat > /etc/docker/daemon.json << EOF
+{  
+  \"exec-opts\": [\"native.cgroupdriver=systemd\"],
+  \"registry-mirrors\": [\"https://q2hy3fzi.mirror.aliyuncs.com\"], 
+  \"graph\": \"/tol/docker-data\" 
+} 
+EOF
+"""
                 print("*"*20,"进入Master节点操作，当前IP: %s" %masterip)
                 master_name = "master0%s" % name_num
                 #设置名字
@@ -123,6 +124,7 @@ EOF
                 #设置hosts
                 master_host = masterip + "  " + master_name
                 etc_hosts = os.system("echo '%s' >> /etc/hosts" % master_host)
+                docker_speed = os.system(docker_speed)
                 for hosts in nodeip_list:
                     name_num += 1
                     hosts_name = hosts + "  node0%s" % (name_num - 1)
