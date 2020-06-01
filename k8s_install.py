@@ -4,6 +4,7 @@
 # describe: K8S V1.18 一键脚本安装
 import os
 import subprocess
+import time
 
 
 class k8s_install(object):
@@ -24,7 +25,7 @@ class k8s_install(object):
         sed_swapoff = "sed -i 's/.*swap.*/#&/' /etc/fstab"
 
         #在所有服务器配置国内yum源
-        yum_install = "yum install -y wget yum-utils device-mapper-persistent-data lvm2 ipset ipvsadm chrony git> /dev/null 2>&1"
+        yum_install = "yum install -y wget  git chrony yum-utils device-mapper-persistent-data lvm2 ipset ipvsadm > /dev/null 2>&1"
         mkdir_repo = "mkdir /etc/yum.repos.d/bak && mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak > /dev/null 2>&1"
         wget_centos = "wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.cloud.tencent.com/repo/centos7_base.repo > /dev/null 2>&1"
         wget_epel = "wget -O /etc/yum.repos.d/epel.repo http://mirrors.cloud.tencent.com/repo/epel-7.repo > /dev/null 2>&1"
@@ -119,12 +120,12 @@ EOF
                 for hosts in nodeip_list:
                     name_num += 1
                     hosts_name += hosts + "  node0%s" % (name_num - 1) + "\n"
-                os.system("echo %s  >> /etc/hosts" % master_host)
-                os.system("echo %s >> /etc/hosts" % hosts_name)
+                os.system("cat >> /etc/hosts <<EOF \n%sEOF\n" % hosts_name)
                 for ip in nodeip_list:
                     os.system("scp -rp /etc/hosts %s:/etc/hosts" % ip)
                 print("*"*20,"进入环境初始化，请耐心等待....")
                 for shell in self.initialization_shell():
+                    time.sleep(1)
                     env_init = os.system(shell)
                 print("*"*20,"环境初始化完成，安装kubeadm...")
                 #设置hosts
@@ -175,8 +176,11 @@ EOF
                     os.system("ssh %s \"echo '%s' > /etc/hostname\"" % (nodeip,node_name))
                     print("*" * 20, "进入环境初始化，请耐心等待....")
                     for shell in self.initialization_shell():
+                        time.sleep(1)
                         os.system("ssh %s \"%s\"" %(nodeip,shell))
                     print("*" * 20, "正在加入集群....")
+                    print("token_creat : ",token_creat)
+                    print("token_code : ",token_code)
                     kubeadm_join = os.system("ssh %s \"kubeadm join %s:6443 --token %s --discovery-token-ca-cert-hash sha256:%s\"" % (nodeip,masterip, str(token_creat), str(token_code)))
                     print("*" * 20, "加入集群成功....")
 
