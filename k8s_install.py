@@ -105,6 +105,7 @@ EOF
         token_code = ()
         name_num = 0
         # #自动添加策略，保存服务器的主机名和密钥信息，如果不添加，那么不再本地know_hosts文件中记录的主机将无法连接
+
         for masterip in masterip_list:
             name_num += 1
             hosts_name = ""
@@ -163,12 +164,12 @@ EOF
                 print("进入集群模式安装")
                 print("暂无")
                 exit()
+            token_creat = token_creat[1].split('\n')[-1]
+            token_code = token_code[1]
             if masterip_list[0] == masterip:
                 node_num = 0
                 for nodeip in nodeip_list:  #安装从节点
                     print("*" * 20, "进入Node节点操作，当前IP: %s" % nodeip)
-                    token_creat = token_creat[1].split('\n')[-1]
-                    token_code = token_code[1]
                     node_num += 1
                     node_name = "node0%s" % (node_num)
                     # 设置名字
