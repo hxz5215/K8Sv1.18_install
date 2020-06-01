@@ -108,15 +108,6 @@ EOF
             name_num += 1
             hosts_name = ""
             if masterip == masterip_list[0]:  # 如果是当前单节点
-                docker_speed = """
-cat > /etc/docker/daemon.json << EOF
-{  
-  \"exec-opts\": [\"native.cgroupdriver=systemd\"],
-  \"registry-mirrors\": [\"https://q2hy3fzi.mirror.aliyuncs.com\"], 
-  \"graph\": \"/tol/docker-data\" 
-} 
-EOF
-"""
                 print("*"*20,"进入Master节点操作，当前IP: %s" %masterip)
                 master_name = "master0%s" % name_num
                 #设置名字
@@ -125,7 +116,6 @@ EOF
                 #设置hosts
                 master_host = masterip + "  " + master_name
                 etc_hosts = os.system("echo '%s' >> /etc/hosts" % master_host)
-                docker_speed = os.system(docker_speed)
                 for hosts in nodeip_list:
                     name_num += 1
                     hosts_name += hosts + "  node0%s" % (name_num - 1) + "\n"
