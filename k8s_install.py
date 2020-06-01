@@ -106,6 +106,7 @@ EOF
         # #自动添加策略，保存服务器的主机名和密钥信息，如果不添加，那么不再本地know_hosts文件中记录的主机将无法连接
         for masterip in masterip_list:
             name_num += 1
+            hosts_name = ""
             if masterip == masterip_list[0]:  # 如果是当前单节点
                 docker_speed = """
 cat > /etc/docker/daemon.json << EOF
@@ -127,10 +128,11 @@ EOF
                 docker_speed = os.system(docker_speed)
                 for hosts in nodeip_list:
                     name_num += 1
-                    hosts_name = hosts + "  node0%s" % (name_num - 1)
-                    node_hosts = os.system("echo '%s' >> /etc/hosts" % hosts_name)
-                    scp_hosts = os.system("scp -rp /etc/hosts %s:/etc/hosts"%hosts)
-                scp_hosts = os.system("scp -rp /etc/hosts %s:/etc/hosts" % nodeip_list[0])
+                    hosts_name += hosts + "  node0%s" % (name_num - 1) + "\n"
+                os.system("echo %s  >> /etc/hosts" % master_host)
+                os.system("echo %s >> /etc/hosts" % hosts_name)
+                for ip in nodeip_list:
+                    os.system("scp -rp /etc/hosts %s:/etc/hosts" % ip)
                 print("*"*20,"进入环境初始化，请耐心等待....")
                 for shell in self.initialization_shell():
                     env_init = os.system(shell)
